@@ -10,11 +10,11 @@ SCREEN_HEIGHT = 1000
 FPS           = 60
 
 BASE_DT       = 0.01
-C_LIGHT       = 50000.0
-C_MAX         = 50000.0  # you can raise or remove speed limit if desired
+C_LIGHT       = 2000.0
+C_MAX         = 20000.0  # you can raise or remove speed limit if desired
 
-WORLD_WIDTH   = 2000
-WORLD_HEIGHT  = 100000
+WORLD_WIDTH   = 4000
+WORLD_HEIGHT  = 4000
 
 TOOLS         = ["Gun","LightPulse","Bomb","ForceField"]
 ROCKET_RAD    = 20    # rocket collision radius
@@ -55,7 +55,7 @@ class LevelFlat(LevelBase):
         # Increase star density
         layers = []
         # (num_stars, parallax)
-        for (n,px) in [(300,0.01),(300,0.02),(250,0.06),(200,0.1)]:
+        for (n,px) in [(3,0.01),(3,0.02),(2,0.06)]:
             stars = []
             for _ in range(n):
                 sx  = random.uniform(0,self.WORLD_WIDTH)
@@ -67,18 +67,21 @@ class LevelFlat(LevelBase):
 
     def _create_asteroids(self):
         asts=[]
-        for _ in range(200):
-            r = random.uniform(9,10)
+        for _ in range(10000):
+            r = random.uniform(1,2)
             grey= random.randint(100,200)
             asteroid = {
-              'x': random.uniform(7*self.WORLD_WIDTH/10,self.WORLD_WIDTH),
+              'x': random.uniform(0,self.WORLD_WIDTH),
               'y': random.uniform(0,self.WORLD_HEIGHT),
-              'vx': random.uniform(-5,5),
-              'vy': random.uniform(3480,3500),
+              'vx': random.uniform(-100,100),
+              'vy': random.uniform(-100,100),
               'radius':r,
               'mass':r,
               'color':(grey, grey, grey)
             }
+            while ((asteroid['x']-self.WORLD_WIDTH/2)**2+(asteroid['y']-self.WORLD_HEIGHT/2)**2 < 120**2):
+                asteroid['x']=random.uniform(0,self.WORLD_WIDTH)
+                asteroid['y']=random.uniform(0,self.WORLD_HEIGHT)
             # add random 'spots' for visual interest
             spots = []
             num_spots = random.randint(2,5)
@@ -130,7 +133,7 @@ class LevelStar(LevelBase):
         # Increase star density
         layers = []
         # (num_stars, parallax)
-        for (n,px) in [(5000,0.1),(3000,0.2),(2500,0.6),(2000,1.0)]:
+        for (n,px) in [(50,0.1),(30,0.2),(25,0.6),(20,1.0)]:
             stars = []
             for _ in range(n):
                 sx  = random.uniform(0,self.WORLD_WIDTH)
@@ -143,8 +146,8 @@ class LevelStar(LevelBase):
 
     def _create_asteroids(self):
         asts=[]
-        for _ in range(20):
-            r = random.uniform(10,25)
+        for _ in range(20000):
+            r = random.uniform(1,2)
             grey= random.randint(100,200)
             asteroid = {
               'x': random.uniform(0,self.WORLD_WIDTH),
@@ -178,7 +181,7 @@ class LevelStar(LevelBase):
         r = math.sqrt(r2)
         if r >= self.GRAVITY_RANGE or r < 1e-3:
             return (0.0,0.0)
-        a_mag= self.G_M/ r2
+        a_mag= self.G_M/ r
         ax= -a_mag*(dx/r)
         ay= -a_mag*(dy/r)
         return (ax,ay)
@@ -222,12 +225,12 @@ class LevelBlackHole(LevelBase):
     Similar to Star, but extremely strong gravity. Lethal radius is pitch black.
     """
     STAR_RADIUS_LETHAL=200  # same lethal radius
-    GRAVITY_RANGE=800
-    G_M=150000  # stronger gravity
+    GRAVITY_RANGE=2000
+    G_M=30000  # stronger gravity
 
     def __init__(self):
         super().__init__()
-        self.HOLE_CX= self.WORLD_WIDTH/2
+        self.HOLE_CX= 3*self.WORLD_WIDTH/4
         self.HOLE_CY= self.WORLD_HEIGHT/2
         self.star_list = self._create_far_stars()
         self.asteroids = self._create_asteroids()
@@ -235,7 +238,7 @@ class LevelBlackHole(LevelBase):
     def _create_far_stars(self):
         s_list=[]
         # also high density
-        for _ in range(800):
+        for _ in range(8):
             sx= random.uniform(0,self.WORLD_WIDTH)
             sy= random.uniform(0,self.WORLD_HEIGHT)
             bri= random.randint(100,220)
@@ -244,8 +247,8 @@ class LevelBlackHole(LevelBase):
 
     def _create_asteroids(self):
         asts=[]
-        for _ in range(20):
-            r = random.uniform(10,25)
+        for _ in range(2000):
+            r = random.uniform(1,2)
             grey= random.randint(100,200)
             asteroid = {
               'x': random.uniform(0,self.WORLD_WIDTH),
@@ -279,7 +282,7 @@ class LevelBlackHole(LevelBase):
         r = math.sqrt(r2)
         if r >= self.GRAVITY_RANGE or r < 1e-3:
             return (0.0,0.0)
-        a_mag= self.G_M/ r2
+        a_mag= self.G_M/r
         ax= -a_mag*(dx/r)
         ay= -a_mag*(dy/r)
         return (ax,ay)
@@ -663,7 +666,7 @@ def main():
         new_lp=[]
         for lp in lightpulses:
             lp['radius']+= lp['speed']*BASE_DT
-            lp['color_alpha']-= 3000.0*BASE_DT
+            lp['color_alpha']-= 300.0*BASE_DT
             if lp['radius']< lp['max_radius'] and lp['color_alpha']>0:
                 new_lp.append(lp)
         lightpulses= new_lp
@@ -747,14 +750,14 @@ def main():
                 dx= bul['x']- rocket['x']
                 dy= bul['y']- rocket['y']
                 if dx*dx+ dy*dy <= (ROCKET_RAD+ bul['radius'])**2:
-                    game_over=True
+                    game_over=False
                     break
             if not game_over:
                 for ast in lvl.asteroids:
                     dx= ast['x']- rocket['x']
                     dy= ast['y']- rocket['y']
                     if dx*dx+ dy*dy <= (ROCKET_RAD+ ast['radius'])**2:
-                        game_over=True
+                        game_over=False
                         break
 
         # draw
