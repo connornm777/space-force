@@ -10,11 +10,11 @@ SCREEN_HEIGHT = 1000
 FPS           = 60
 
 BASE_DT       = 0.01
-C_LIGHT       = 5000.0
-C_MAX         = 5000.0  # you can raise or remove speed limit if desired
+C_LIGHT       = 50000.0
+C_MAX         = 50000.0  # you can raise or remove speed limit if desired
 
-WORLD_WIDTH   = 1200
-WORLD_HEIGHT  = 10000
+WORLD_WIDTH   = 2000
+WORLD_HEIGHT  = 100000
 
 TOOLS         = ["Gun","LightPulse","Bomb","ForceField"]
 ROCKET_RAD    = 20    # rocket collision radius
@@ -55,7 +55,7 @@ class LevelFlat(LevelBase):
         # Increase star density
         layers = []
         # (num_stars, parallax)
-        for (n,px) in [(300,0.1),(300,0.2),(250,0.6),(200,1.0)]:
+        for (n,px) in [(300,0.01),(300,0.02),(250,0.06),(200,0.1)]:
             stars = []
             for _ in range(n):
                 sx  = random.uniform(0,self.WORLD_WIDTH)
@@ -67,14 +67,14 @@ class LevelFlat(LevelBase):
 
     def _create_asteroids(self):
         asts=[]
-        for _ in range(500):
-            r = random.uniform(4,5)
+        for _ in range(200):
+            r = random.uniform(9,10)
             grey= random.randint(100,200)
             asteroid = {
-              'x': random.uniform(9*self.WORLD_WIDTH/10,self.WORLD_WIDTH),
+              'x': random.uniform(7*self.WORLD_WIDTH/10,self.WORLD_WIDTH),
               'y': random.uniform(0,self.WORLD_HEIGHT),
               'vx': random.uniform(-5,5),
-              'vy': random.uniform(3450,3500),
+              'vy': random.uniform(3480,3500),
               'radius':r,
               'mass':r,
               'color':(grey, grey, grey)
