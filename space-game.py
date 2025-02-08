@@ -9,11 +9,10 @@ SCREEN_HEIGHT = 1000
 FPS           = 60
 
 BASE_DT       = 0.1
-C_LIGHT       = 300000.0
-C_MAX         = 300000.0
 
-WORLD_WIDTH   = 10000
-WORLD_HEIGHT  = 10000
+
+WORLD_WIDTH   = 100000
+WORLD_HEIGHT  = 100000
 
 TOOLS         = ["Gun","LightPulse","Bomb","ForceField"]
 ROCKET_RAD    = 20
@@ -24,18 +23,32 @@ ROCKET_RAD    = 20
 
 class LevelBase:
     def __init__(self):
-        self.WORLD_WIDTH  = WORLD_WIDTH
-        self.WORLD_HEIGHT = WORLD_HEIGHT
+        self.WORLD_WIDTH  = 20000
+        self.WORLD_HEIGHT = 20000
+        self.star_layers = self._create_star_layers()
         self.asteroids    = []
 
-    def force_func(self, x, y, vx, vy):
-        return (0.0, 0.0)
-
-    def lethal_check(self, x, y):
-        return False
+    def _create_star_layers(self):
+        layers = []
+        for (n,px) in [(7000,0.1),(6000,0.2),(5500,0.6),(5000,0.9)]:
+            stars = []
+            for _ in range(n):
+                sx  = random.uniform(0,self.WORLD_WIDTH)
+                sy  = random.uniform(0,self.WORLD_HEIGHT)
+                bri = random.randint(100,220)
+                stars.append({'x':sx,'y':sy,'color':(bri,bri,bri)})
+            layers.append({'stars': stars, 'parallax': px})
+        return layers
 
     def draw_background(self, screen, rocket, cam_x, cam_y):
         screen.fill((0,0,0))
+        for layer in self.star_layers:
+            px= layer['parallax']
+            for st in layer['stars']:
+                draw_object_tiled(
+                    screen, st['x'], st['y'], cam_x*px, cam_y*px,
+                    st['color'], "star", 1
+                )
 
 ############################################################
 # LEVEL FLAT
@@ -108,8 +121,8 @@ class LevelFlat(LevelBase):
 
 class LevelStar(LevelBase):
     STAR_RADIUS_LETHAL=200
-    GRAVITY_RANGE=800
-    G_M=30000
+    GRAVITY_RANGE=50000
+    G_M=5000
     def __init__(self):
         super().__init__()
         self.STAR_CX= self.WORLD_WIDTH/2
@@ -128,7 +141,7 @@ class LevelStar(LevelBase):
 
     def _create_asteroids(self):
         asts=[]
-        for _ in range(20):
+        for _ in range(0):
             r = random.uniform(10,25)
             grey= random.randint(100,200)
             asteroid = {
@@ -162,7 +175,7 @@ class LevelStar(LevelBase):
         r = math.sqrt(r2)
         if r>= self.GRAVITY_RANGE or r< 1e-3:
             return (0.0,0.0)
-        a_mag= self.G_M/r2
+        a_mag= self.G_M/r
         ax= -a_mag*(dx/r)
         ay= -a_mag*(dy/r)
         return (ax,ay)
@@ -176,7 +189,7 @@ class LevelStar(LevelBase):
         screen.fill((0,0,0))
         sx= self.STAR_CX- cam_x
         sy= self.STAR_CY- cam_y
-        max_r=600
+        max_r=2000
         step=10
         for rr in range(int(max_r), self.STAR_RADIUS_LETHAL, -step):
             frac= (rr- self.STAR_RADIUS_LETHAL)/(max_r- self.STAR_RADIUS_LETHAL)
@@ -186,11 +199,13 @@ class LevelStar(LevelBase):
             bblu= int(255*((1-frac)**2))
             pygame.draw.circle(screen,(rred,ggrn,bblu),(int(sx),int(sy)), rr)
         pygame.draw.circle(screen,(255,255,255),(int(sx),int(sy)), self.STAR_RADIUS_LETHAL)
-        for st in self.star_list:
-            draw_object_tiled(
-                screen, st['x'], st['y'], cam_x*0, cam_y*0,
-                st['color'], "star", 1
-            )
+        for layer in self.star_layers:
+            px= layer['parallax']
+            for st in layer['stars']:
+                draw_object_tiled(
+                    screen, st['x'], st['y'], cam_x*px, cam_y*px,
+                    st['color'], "star", 1
+                )
 
 ############################################################
 # LEVEL BLACK HOLE
@@ -277,13 +292,6 @@ class LevelBlackHole(LevelBase):
 # UTILITY
 ############################################################
 
-def limit_speed(vx, vy, cmax=C_MAX):
-    spd= math.hypot(vx, vy)
-    if spd> cmax:
-        scl= cmax/spd
-        vx*= scl
-        vy*= scl
-    return vx, vy
 
 def wrap_pos(x, y, w=WORLD_WIDTH, h=WORLD_HEIGHT):
     x%= w
@@ -366,24 +374,24 @@ def handle_collision(objA, objB, rocket_data, game_state):
 def draw_rocket(screen, rocket, forward_thrust_on, reverse_thrust_on, turn_left, turn_right):
     rx= SCREEN_WIDTH/2
     ry= SCREEN_HEIGHT/2
-    length= 30.0
+    length= 50.0
+    wfact = 0.2
     rad= math.radians(rocket['heading'])
 
     nose_x= rx + length*math.cos(rad)
     nose_y= ry + length*math.sin(rad)
-    left_x= rx + (-0.4*length)*math.cos(rad + math.radians(130))
-    left_y= ry + (-0.4*length)*math.sin(rad + math.radians(130))
-    right_x= rx + (-0.4*length)*math.cos(rad - math.radians(130))
-    right_y= ry + (-0.4*length)*math.sin(rad - math.radians(130))
+    left_x= rx + (-wfact*length)*math.cos(rad  + math.radians(90))
+    left_y= ry + (-wfact*length)*math.sin(rad + math.radians(90))
+    right_x= rx + (-wfact*length)*math.cos(rad - math.radians(90))
+    right_y= ry + (-wfact*length)*math.sin(rad - math.radians(90))
 
-    color_front=(255,0,0)
-    color_back =(180,0,0)
+    color_front=(113,121,126)
+    color_back =(159,163,167)
     pygame.draw.polygon(screen, color_front, [(nose_x,nose_y),(left_x,left_y),(right_x,right_y)])
-    back_x= rx - 0.7*length*math.cos(rad)
-    back_y= ry - 0.7*length*math.sin(rad)
-    pygame.draw.polygon(screen, color_back, [(left_x,left_y),(back_x,back_y),(right_x,right_y)])
+    back_x= rx - length*math.cos(rad)
+    back_y= ry - length*math.sin(rad)
+    pygame.draw.polygon(screen, color_back, [(back_x,back_y),(left_x,left_y),(right_x,right_y)])
 
-    # forward thruster => red/orange
     if forward_thrust_on and not rocket['forcefield_on']:
         flame_len=25
         flame_rad= rad+ math.pi
@@ -391,29 +399,33 @@ def draw_rocket(screen, rocket, forward_thrust_on, reverse_thrust_on, turn_left,
         fy= back_y+ random.uniform(0.8,1.2)* flame_len* math.sin(flame_rad)
         pygame.draw.line(screen,(255,165,0),(back_x,back_y),(fx,fy),3)
 
-    # reverse thruster => show from nose => blue
     if reverse_thrust_on and not rocket['forcefield_on']:
         flame_len=25
         flame_rad= rad
         fx= nose_x+ random.uniform(0.8,1.2)* flame_len* math.cos(flame_rad)
         fy= nose_y+ random.uniform(0.8,1.2)* flame_len* math.sin(flame_rad)
-        pygame.draw.line(screen,(0,0,255),(nose_x,nose_y),(fx,fy),3)
+        pygame.draw.line(screen,(255,165,0),(nose_x,nose_y),(fx,fy),3)
 
     if turn_left:
-        flame_len=15
-        side_ang= rad- math.radians(90)
-        sx, sy= right_x, right_y
-        fx= sx+ flame_len* math.cos(side_ang)* random.uniform(0.8,1.2)
-        fy= sy+ flame_len* math.sin(side_ang)* random.uniform(0.8,1.2)
-        pygame.draw.line(screen,(0,255,0),(sx,sy),(fx,fy),2)
+        flame_len=10
+        side_ang= rad + math.radians(90)
+        fbx= back_x - flame_len* math.cos(side_ang)* random.uniform(0.8,1.2)
+        fby= back_y - flame_len* math.sin(side_ang)* random.uniform(0.8,1.2)
+        pygame.draw.line(screen,(0,165,255),(back_x,back_y),(fbx,fby),2)
+        ffx= nose_x+ flame_len* math.cos(side_ang)* random.uniform(0.8,1.2)
+        ffy= nose_y+ flame_len* math.sin(side_ang)* random.uniform(0.8,1.2)
+        pygame.draw.line(screen,(0,165,255),(nose_x,nose_y),(ffx,ffy),2)
 
     if turn_right:
-        flame_len=15
-        side_ang= rad+ math.radians(90)
-        sx, sy= left_x, left_y
-        fx= sx+ flame_len* math.cos(side_ang)* random.uniform(0.8,1.2)
-        fy= sy+ flame_len* math.sin(side_ang)* random.uniform(0.8,1.2)
-        pygame.draw.line(screen,(0,255,0),(sx,sy),(fx,fy),2)
+        flame_len=10
+        side_ang= rad - math.radians(90)
+        fbx= back_x - flame_len* math.cos(side_ang)* random.uniform(0.8,1.2)
+        fby= back_y - flame_len* math.sin(side_ang)* random.uniform(0.8,1.2)
+        pygame.draw.line(screen,(0,165,255),(back_x,back_y),(fbx,fby),2)
+        ffx= nose_x+ flame_len* math.cos(side_ang)* random.uniform(0.8,1.2)
+        ffy= nose_y+ flame_len* math.sin(side_ang)* random.uniform(0.8,1.2)
+        pygame.draw.line(screen,(0,165,255),(nose_x,nose_y),(ffx,ffy),2)
+
 
     # Force field
     if rocket['forcefield_on']:
@@ -567,7 +579,8 @@ def main():
         turn_right=False
         forward_thrust=False
         reverse_thrust=False
-        torque=50.0
+        torque=20.0
+        thrust = 20.0
 
         if keys[pygame.K_a]:
             rocket['angvel']-= torque*dt_real
@@ -578,16 +591,14 @@ def main():
         if keys[pygame.K_w] and not rocket['forcefield_on']:
             # forward thrust
             h_rad= math.radians(rocket['heading'])
-            rocket['vx']+= 100.0* math.cos(h_rad)* dt_real
-            rocket['vy']+= 100.0* math.sin(h_rad)* dt_real
-            rocket['vx'], rocket['vy']= limit_speed(rocket['vx'], rocket['vy'])
+            rocket['vx']+= thrust* math.cos(h_rad)* dt_real
+            rocket['vy']+= thrust* math.sin(h_rad)* dt_real
             forward_thrust=True
         # user wants s => backward thrust
         if keys[pygame.K_s] and not rocket['forcefield_on']:
             h_rad= math.radians(rocket['heading'])
-            rocket['vx']-= 100.0* math.cos(h_rad)* dt_real
-            rocket['vy']-= 100.0* math.sin(h_rad)* dt_real
-            rocket['vx'], rocket['vy']= limit_speed(rocket['vx'], rocket['vy'])
+            rocket['vx']-= thrust* math.cos(h_rad)* dt_real
+            rocket['vy']-= thrust* math.sin(h_rad)* dt_real
             reverse_thrust=True
 
         rocket['shield_on']= rocket['forcefield_on'] # unify naming
@@ -595,7 +606,6 @@ def main():
         # update rocket rotation & position
         rocket['vx']+= lvl.force_func(rocket['x'],rocket['y'],rocket['vx'],rocket['vy'])[0]*BASE_DT
         rocket['vy']+= lvl.force_func(rocket['x'],rocket['y'],rocket['vx'],rocket['vy'])[1]*BASE_DT
-        rocket['vx'], rocket['vy']= limit_speed(rocket['vx'], rocket['vy'])
         rocket['heading']+= rocket['angvel']*BASE_DT
         rocket['x']+= rocket['vx']*BASE_DT
         rocket['y']+= rocket['vy']*BASE_DT
