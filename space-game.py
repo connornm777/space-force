@@ -7,15 +7,14 @@ import pygame
 SCREEN_WIDTH  = 1800
 SCREEN_HEIGHT = 1000
 FPS           = 60
-
 BASE_DT       = 0.1
-
-
 WORLD_WIDTH   = 100000
 WORLD_HEIGHT  = 100000
 
 TOOLS         = ["Gun","LightPulse","Bomb","ForceField"]
 ROCKET_RAD    = 20
+
+
 
 ############################################################
 # LEVEL BASE CLASSES
@@ -187,6 +186,13 @@ class LevelStar(LevelBase):
 
     def draw_background(self, screen, rocket, cam_x, cam_y):
         screen.fill((0,0,0))
+        for layer in self.star_layers:
+            px= layer['parallax']
+            for st in layer['stars']:
+                draw_object_tiled(
+                    screen, st['x'], st['y'], cam_x*px, cam_y*px,
+                    st['color'], "star", 1
+                )
         sx= self.STAR_CX- cam_x
         sy= self.STAR_CY- cam_y
         max_r=2000
@@ -199,13 +205,7 @@ class LevelStar(LevelBase):
             bblu= int(255*((1-frac)**2))
             pygame.draw.circle(screen,(rred,ggrn,bblu),(int(sx),int(sy)), rr)
         pygame.draw.circle(screen,(255,255,255),(int(sx),int(sy)), self.STAR_RADIUS_LETHAL)
-        for layer in self.star_layers:
-            px= layer['parallax']
-            for st in layer['stars']:
-                draw_object_tiled(
-                    screen, st['x'], st['y'], cam_x*px, cam_y*px,
-                    st['color'], "star", 1
-                )
+
 
 ############################################################
 # LEVEL BLACK HOLE
@@ -374,7 +374,7 @@ def handle_collision(objA, objB, rocket_data, game_state):
 def draw_rocket(screen, rocket, forward_thrust_on, reverse_thrust_on, turn_left, turn_right):
     rx= SCREEN_WIDTH/2
     ry= SCREEN_HEIGHT/2
-    length= 50.0
+    length= 40.0
     wfact = 0.2
     rad= math.radians(rocket['heading'])
 
